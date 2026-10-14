@@ -22,7 +22,7 @@ impl Rng {
     pub fn new(seed: u64) -> Rng {
         Rng(seed ^ 0x2545_F491_4F6C_DD1D)
     }
-    pub fn next(&mut self) -> u64 {
+    pub fn next_u64(&mut self) -> u64 {
         self.0 = self.0.wrapping_add(0x9E37_79B9_7F4A_7C15);
         let mut z = self.0;
         z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
@@ -30,10 +30,10 @@ impl Rng {
         z ^ (z >> 31)
     }
     pub fn below(&mut self, n: usize) -> usize {
-        ((self.next() >> 32) * n as u64 >> 32) as usize
+        (((self.next_u64() >> 32) * n as u64) >> 32) as usize
     }
     pub fn unit(&mut self) -> f64 {
-        (self.next() >> 11) as f64 / (1u64 << 53) as f64
+        (self.next_u64() >> 11) as f64 / (1u64 << 53) as f64
     }
     /// A random set bit of `b` (nonzero).
     pub fn bit(&mut self, mut b: u64) -> usize {
@@ -52,8 +52,8 @@ pub fn valid(b: &Board, variant: Variant) -> bool {
         if b.occ[c] & TRAPS & !neighbors(b.occ[c]) != 0 {
             return false;
         }
-        for k in 0..NKINDS {
-            if b.bb[c][k].count_ones() > ARMY[k] {
+        for (k, &max) in ARMY.iter().enumerate() {
+            if b.bb[c][k].count_ones() > max {
                 return false;
             }
         }
@@ -221,8 +221,8 @@ pub fn neighborhood(b: &Board, variant: Variant) -> Vec<Board> {
         }
     }
     for c in 0..colors {
-        for k in 0..NKINDS {
-            if b.bb[c][k].count_ones() < ARMY[k] {
+        for (k, &max) in ARMY.iter().enumerate() {
+            if b.bb[c][k].count_ones() < max {
                 for &to in &empties {
                     let mut q = *b;
                     q.put(c, k, to);

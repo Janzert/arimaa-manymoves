@@ -1,0 +1,15 @@
+2w
+ +-----------------+
+8| . . . . . . . r |
+7| . . H . . C . . |
+6| . D x E . x D . |
+5| . . . . M . . . |
+4| . . R . . R . . |
+3| . R x C . x H . |
+2| . . R . . R . . |
+1| . R . . R . R . |
+ +-----------------+
+   a b c d e f g h
+
+# 358513 unique moves
+# 358607 unique moves without black r

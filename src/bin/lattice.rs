@@ -12,8 +12,8 @@
 //! Usage: lattice [threads] [swaps]   (swaps: 0, 1 or 2 at index 4; default 1)
 
 use std::collections::HashSet;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 
 use manymoves::search::{Rng, Variant, polish, valid};
@@ -108,7 +108,7 @@ fn score(boards: &[Board], steps: u32, threads: usize, keep: usize) -> Vec<(usiz
         }
     });
     let mut r = results.into_inner().unwrap();
-    r.sort_by(|a, b| b.0.cmp(&a.0));
+    r.sort_by_key(|x| std::cmp::Reverse(x.0));
     r.truncate(keep);
     r
 }
@@ -170,10 +170,13 @@ fn main() {
         }
     });
     let mut polished = polished.into_inner().unwrap();
-    polished.sort_by(|a, b| b.0.cmp(&a.0));
+    polished.sort_by_key(|x| std::cmp::Reverse(x.0));
     for (n, b) in &polished {
-        std::fs::write(format!("results/lattice/gold-{n}.txt"), format!("2g\n{}\n# {n} unique moves\n", b.diagram()))
-            .unwrap();
+        std::fs::write(
+            format!("results/lattice/gold-{n}.txt"),
+            format!("2g\n{}\n# {n} unique moves\n", b.diagram()),
+        )
+        .unwrap();
     }
     let (gn, gb) = polished[0];
     println!("best gold-only: {gn}\n{}", gb.diagram());
@@ -195,7 +198,10 @@ fn main() {
     }
     let mut rng = Rng::new(99);
     let (lb, ln) = polish(best.1, Variant::Legal, &mut rng, &mut c, |_, _| {});
-    std::fs::write(format!("results/lattice/legal-{ln}.txt"), format!("2g\n{}\n# {ln} unique moves\n", lb.diagram()))
-        .unwrap();
+    std::fs::write(
+        format!("results/lattice/legal-{ln}.txt"),
+        format!("2g\n{}\n# {ln} unique moves\n", lb.diagram()),
+    )
+    .unwrap();
     println!("best legal: {} -> polished {ln}\n{}", best.0, lb.diagram());
 }

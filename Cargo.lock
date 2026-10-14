@@ -5,6 +5,7 @@ version = 4
 [[package]]
 name = "howdah-arimaa"
 version = "0.1.0"
+source = "git+https://github.com/Janzert/howdah?rev=91df9a6b8e0f0cdb0b43849c2040869266ab783c#91df9a6b8e0f0cdb0b43849c2040869266ab783c"
 dependencies = [
  "thiserror",
 ]

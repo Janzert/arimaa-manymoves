@@ -37,10 +37,13 @@ fn main() {
         for th in 0..threads {
             let (best, params, dir) = (&best, &params, &dir);
             s.spawn(move || {
-                let seed = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() as u64;
+                let seed =
+                    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+                        as u64;
                 let mut rng = Rng::new(seed ^ (th as u64).wrapping_mul(0x9E37_79B9));
                 let mut counter = Counter::default();
-                for run in 0.. {
+                // Runs until stopped.
+                for run in 0u64..u64::MAX {
                     let b0 = start.unwrap_or_else(|| random_board(&mut rng, variant));
                     let report = |b: &manymoves::Board, n: usize| {
                         let mut g = best.lock().unwrap();
@@ -48,23 +51,39 @@ fn main() {
                             *g = n;
                             let text = format!("2g\n{}\n# {n} unique moves\n", b.diagram());
                             std::fs::write(format!("{dir}/{n}.txt"), &text).unwrap();
-                            println!("[{:.0}s] thread {th} run {run}: {n}\n{}", t0.elapsed().as_secs_f64(), b.diagram());
+                            println!(
+                                "[{:.0}s] thread {th} run {run}: {n}\n{}",
+                                t0.elapsed().as_secs_f64(),
+                                b.diagram()
+                            );
                         }
                     };
                     let (b1, n1) = if steps < 4 {
                         let (_, proxy, top) = anneal(b0, params, &mut rng, &mut counter, |_, _| {});
-                        let exact = top.iter().map(|(_, b)| (counter.count(b), *b)).max_by_key(|x| x.0).unwrap();
+                        let exact =
+                            top.iter().map(|(_, b)| (counter.count(b), *b)).max_by_key(|x| x.0).unwrap();
                         report(&exact.1, exact.0);
-                        println!("[{:.0}s] thread {th} run {run}: proxy best {proxy}, exact best of top {} {}",
-                            t0.elapsed().as_secs_f64(), top.len(), exact.0);
+                        println!(
+                            "[{:.0}s] thread {th} run {run}: proxy best {proxy}, exact best of top {} {}",
+                            t0.elapsed().as_secs_f64(),
+                            top.len(),
+                            exact.0
+                        );
                         (exact.1, exact.0)
                     } else {
                         let (b, n, _) = anneal(b0, params, &mut rng, &mut counter, report);
                         (b, n)
                     };
                     let (b2, n) = polish(b1, variant, &mut rng, &mut counter, report);
-                    println!("[{:.0}s] thread {th} run {run} done: anneal {n1} polished {n}", t0.elapsed().as_secs_f64());
-                    std::fs::write(format!("{dir}/local-{n}.txt"), format!("2g\n{}\n# {n} unique moves\n", b2.diagram())).unwrap();
+                    println!(
+                        "[{:.0}s] thread {th} run {run} done: anneal {n1} polished {n}",
+                        t0.elapsed().as_secs_f64()
+                    );
+                    std::fs::write(
+                        format!("{dir}/local-{n}.txt"),
+                        format!("2g\n{}\n# {n} unique moves\n", b2.diagram()),
+                    )
+                    .unwrap();
                 }
             });
         }

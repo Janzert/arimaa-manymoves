@@ -25,5 +25,14 @@ fn main() {
     println!("{} distinct deltas", u.len());
     d.sort();
     let q = |f: f64| d[((d.len() - 1) as f64 * f) as usize];
-    println!("base {base}: min {} 10% {} 25% {} 50% {} 75% {} 90% {} max {}", q(0.0), q(0.1), q(0.25), q(0.5), q(0.75), q(0.9), q(1.0));
+    println!(
+        "base {base}: min {} 10% {} 25% {} 50% {} 75% {} 90% {} max {}",
+        q(0.0),
+        q(0.1),
+        q(0.25),
+        q(0.5),
+        q(0.75),
+        q(0.9),
+        q(1.0)
+    );
 }

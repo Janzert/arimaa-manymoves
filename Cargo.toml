@@ -3,9 +3,11 @@ name = "manymoves"
 version = "0.1.0"
 edition = "2024"
 description = "Searching for the Arimaa position with the most unique moves"
+license = "MIT"
+repository = "https://github.com/Janzert/arimaa-manymoves"
 
 [dependencies]
-howdah-arimaa = { path = "../howdah/crates/howdah-arimaa" }
+howdah-arimaa = { git = "https://github.com/Janzert/howdah", rev = "91df9a6b8e0f0cdb0b43849c2040869266ab783c" }
 
 [profile.release]
 debug = 1

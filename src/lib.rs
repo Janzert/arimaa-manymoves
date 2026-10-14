@@ -422,7 +422,8 @@ fn reference_dfs(tb: &mut TurnBuilder, seen: &mut HashSet<SearchKey>, finals: &m
         // What the next steps depend on: the board, steps left, a pending
         // push, and the last simple step (which a pull may follow).
         let last = tb.steps().last().unwrap();
-        let pull = (last.kind == StepKind::Simple).then(|| (last.effect.step.from, last.effect.step.piece.kind));
+        let pull =
+            (last.kind == StepKind::Simple).then_some((last.effect.step.from, last.effect.step.piece.kind));
         let board = tb.position().to_short_string();
         if tb.can_finish().is_ok() {
             finals.insert(board.clone());

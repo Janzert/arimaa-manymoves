@@ -136,17 +136,17 @@ fn piece_poly(kind: Kind, cls: Class) -> Poly {
             if other_trap < D {
                 c[other_trap] += 1;
             }
-            for d in 0..D {
-                best[d] = best[d].max(c[d]);
+            for (b, x) in best.iter_mut().zip(c) {
+                *b = (*b).max(x);
             }
         }
     }
     let mut p = Poly::one();
-    for d in 1..D {
+    for (d, &n) in best.iter().enumerate().skip(1) {
         if kind == Kind::Silver {
-            p.0[0][d] = best[d];
+            p.0[0][d] = n;
         } else {
-            p.0[d][0] = best[d];
+            p.0[d][0] = n;
         }
     }
     p
@@ -246,7 +246,14 @@ fn trap_uses(with_silver: bool, occupied: bool) -> Vec<TrapUse> {
 /// The largest bound over every way to use the traps, with at most
 /// `rabbits` gold rabbits, `others` other gold pieces and `silver` movable
 /// silver pieces (fewer pieces never raise the bound).
-fn max_bound(rabbits: usize, others: usize, silver: usize, occupied: bool, ps: &Polys) -> (i128, Vec<TrapUse>) {
+#[allow(clippy::needless_range_loop)] // index combinations, not iteration
+fn max_bound(
+    rabbits: usize,
+    others: usize,
+    silver: usize,
+    occupied: bool,
+    ps: &Polys,
+) -> (i128, Vec<TrapUse>) {
     let uses = trap_uses(silver > 0, occupied);
     let polys: Vec<Poly> = uses.iter().map(|u| trap_poly(u, ps)).collect();
     let n = uses.len();
