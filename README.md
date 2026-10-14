@@ -25,7 +25,7 @@ piece removed it has **372,846**.
 <td align="center"><img src="images/gold-371500.jpg" width="320" alt="Gold-only position with 371,500 unique moves"><br>
 <b>371,500</b>: gold pieces only, the search's strongest attractor<br><code>boards/gold-371500.txt</code></td>
 <td align="center"><img src="images/aaaa_top.jpg" width="320" alt="Previous record, 359,661 unique moves"><br>
-<b>359,661</b>: the previous record (aaaa, 2014)<br><code>boards/aaaa_top.txt</code></td>
+<b>359,661</b>: the previous record (aaaa, 2013)<br><code>boards/aaaa_top.txt</code></td>
 </tr>
 </table>
 
@@ -81,12 +81,9 @@ There are two variants:
 |---|---|---|
 | 339,806 | `boards/boardH11w.txt` | proposed by Fritzlein on the [arimaa.com forum](http://arimaa.com/arimaa/forum/cgi/YaBB.cgi?board=devTalk;action=display;num=1133599198;start=29#29) |
 | 358,513 | `boards/boardH12w.txt` | Janzert's improvement on it |
-| 359,661 | `boards/aaaa_top.txt` | aaaa's improvement on that (2014) |
+| 359,661 | `boards/aaaa_top.txt` | aaaa's improvement on that (2013) |
 | 370,473 | `boards/legal-370473.txt` | simulated annealing (this repository) |
 | 372,739 | `boards/legal-372739.txt` | annealing on the 3-step count (this repository) |
-
-`boards/boardH3w.txt` counts 373,985, but it has nine gold rabbits and no
-silver pieces, so it isn't valid in either variant.
 
 ## How it was done
 
