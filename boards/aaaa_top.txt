@@ -1,0 +1,17 @@
+2g
+ +-----------------+
+8| . . . . . . . r |
+7| . . R . . H . . |
+6| . H x E . x D . |
+5| . . . . M . . . |
+4| . . R . . R . . |
+3| . R x D . x C . |
+2| . . C . . R . . |
+1| . R . . R . R . |
+ +-----------------+
+   a b c d e f g h 
+
+# This allows for 359661 unique moves.
+# Position developed by aaaa modifying my position "boardH12w"
+# that modified Fritzlein's
+# http://arimaa.com/arimaa/forum/cgi/YaBB.cgi?board=devTalk;action=display;num=1133599198;start=29#29

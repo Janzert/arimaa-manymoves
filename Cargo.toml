@@ -1,0 +1,11 @@
+[package]
+name = "manymoves"
+version = "0.1.0"
+edition = "2024"
+description = "Searching for the Arimaa position with the most unique moves"
+
+[dependencies]
+howdah-arimaa = { path = "../howdah/crates/howdah-arimaa" }
+
+[profile.release]
+debug = 1
