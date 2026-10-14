@@ -369,7 +369,7 @@ pub struct Counter {
 
 impl Default for Counter {
     fn default() -> Self {
-        Counter { finals: KeySet::new(21), partials: KeySet::new(17), start: 0 }
+        Counter { finals: KeySet::new(20), partials: KeySet::new(17), start: 0 }
     }
 }
 
@@ -388,10 +388,16 @@ impl Counter {
 
     /// Unique moves for gold from `p`.
     pub fn count(&mut self, p: &Board) -> usize {
+        self.count_steps(p, 4)
+    }
+
+    /// Distinct boards reachable in 1 to `steps` steps (a cheaper proxy
+    /// for [`Counter::count`] with fewer steps).
+    pub fn count_steps(&mut self, p: &Board, steps: u32) -> usize {
         self.finals.clear();
         self.partials.clear();
         self.start = p.hash;
-        self.dfs(p, 4);
+        self.dfs(p, steps);
         self.finals.len()
     }
 }

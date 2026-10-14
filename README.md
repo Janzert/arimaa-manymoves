@@ -18,7 +18,8 @@ Two variants:
     target/release/count [--ref] BOARD...    # unique moves of board files
     target/release/crosscheck [N] [SEED]     # fast count vs howdah-arimaa on random crowded boards
     target/release/search legal|gold [THREADS] [ITERS] [T_START] [T_END] [START_BOARD]
-    target/release/bound [empty-traps] [SILVER...]   # upper bound over all positions
+    target/release/bound [empty-traps] [SILVER...]   # upper bound over all positions (BOUND.md)
+    target/release/lattice [THREADS] [SWAPS]  # lattice-based candidates (RESULTS.md)
 
 `count` is a bitboard DFS over single steps, pushes and pulls with
 deduplication of intermediate positions. With `--ref` it also enumerates every
