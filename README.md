@@ -77,11 +77,41 @@ There are two variants:
 
 ## History
 
+The question came up in the arimaa.com forum's
+["move list" thread](http://arimaa.com/arimaa/forum/cgi/YaBB.cgi?board=devTalk;action=display;num=1133599198)
+in January 2006. medarch asked for the most unique moves ever seen and for
+an upper bound.
+
+- **Real games:** Janzert had just counted every position in the game
+  database. The most was 219,909, in game 5975 before move 58w. Bot-vs-bot
+  games peaked at 142,418 and human-vs-human games at 117,059.
+- **The first constructed position** came from 99of9: 373,935 unique moves,
+  or 373,985 without its silver rabbit. Fritzlein pointed out that it gave
+  gold nine rabbits.
+- **With a legal army,** Janzert worked through 325,447, 336,488, 338,034
+  and 338,752. Ideas from spectators of a World Championship game helped:
+  Ryan Cable suggested keeping pieces off the a and h files and giving
+  traps two neighbours, and jdb saw that swapping the horse and camel on
+  the d file gained moves.
+- **Fritzlein proposed** a position built on Ryan Cable's other idea: every
+  piece keeps all four of its first steps, and every rabbit three. It
+  reached 339,806. Janzert's rearrangements then reached 353,982 and, on
+  6 January 2006, 358,513.
+- **Pushes and pulls lose moves.** medarch suggested adding silver rabbits
+  for gold to push and pull. Janzert showed that it lost moves (one more
+  on c8 took 99of9's position from 373,935 to 358,543): the rabbit blocks
+  a square, so a step gold could take before, such as the elephant's step
+  north, now needs the rabbit moved out of the way first.
+- **In June 2013** aaaa posted a rearrangement of Janzert's position with
+  359,661, which stood as the record until this project.
+
+Every count in the thread agrees with this repository's counter.
+
 | Unique moves | Board | Notes |
 |---|---|---|
-| 339,806 | `boards/boardH11w.txt` | proposed by Fritzlein on the [arimaa.com forum](http://arimaa.com/arimaa/forum/cgi/YaBB.cgi?board=devTalk;action=display;num=1133599198;start=29#29) |
-| 358,513 | `boards/boardH12w.txt` | Janzert's improvement on it |
-| 359,661 | `boards/aaaa_top.txt` | aaaa's improvement on that (2013) |
+| 339,806 | `boards/boardH11w.txt` | Fritzlein's proposal (January 2006) |
+| 358,513 | `boards/boardH12w.txt` | Janzert (January 2006) |
+| 359,661 | `boards/aaaa_top.txt` | aaaa (June 2013) |
 | 370,473 | `boards/legal-370473.txt` | simulated annealing (this repository) |
 | 372,739 | `boards/legal-372739.txt` | annealing on the 3-step count (this repository) |
 
