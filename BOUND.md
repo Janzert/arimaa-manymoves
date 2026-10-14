@@ -48,9 +48,9 @@ and their neighbors.
 
 | Positions | Bound | Best found |
 |---|---|---|
-| Gold only, traps empty | 588,575 | 371,500 |
-| Gold only | 1,334,950 | 371,500 |
-| Legal, 1 movable silver piece, traps empty | 795,919 | 370,473 |
+| Gold only, traps empty | 588,575 | 372,846 |
+| Gold only | 1,334,950 | 372,846 |
+| Legal, 1 movable silver piece, traps empty | 795,919 | 372,739 |
 
 Without any removals at all (no traps), the same product for a gold army
 gives 471,734. That is roughly the most this approach can show, because it

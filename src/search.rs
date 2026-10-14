@@ -141,19 +141,27 @@ pub struct Anneal {
     pub iters: u64,
     pub t_start: f64,
     pub t_end: f64,
+    /// Steps per turn for the counts it anneals on: 4 is the real count,
+    /// fewer is a cheaper proxy.
+    pub steps: u32,
+    /// How many of the best distinct boards visited to return.
+    pub keep: usize,
 }
 
-/// One annealing run from `start`; calls `report` on each new best of the run.
+/// One annealing run from `start`; calls `report` on each new best of the
+/// run. Returns the best board and its count, and the best `keep` distinct
+/// boards visited (best first).
 pub fn anneal(
     start: Board,
     params: &Anneal,
     rng: &mut Rng,
     counter: &mut Counter,
     mut report: impl FnMut(&Board, usize),
-) -> (Board, usize) {
+) -> (Board, usize, Vec<(usize, Board)>) {
     let mut cur = start;
-    let mut cur_n = counter.count(&cur);
+    let mut cur_n = counter.count_steps(&cur, params.steps);
     let (mut best, mut best_n) = (cur, cur_n);
+    let mut top: Vec<(usize, Board)> = vec![(cur_n, cur)];
     report(&best, best_n);
     for i in 0..params.iters {
         let frac = i as f64 / params.iters as f64;
@@ -162,10 +170,16 @@ pub fn anneal(
         if q == cur || !valid(&q, params.variant) {
             continue;
         }
-        let n = counter.count(&q);
+        let n = counter.count_steps(&q, params.steps);
         if n >= cur_n || rng.unit() < ((n as f64 - cur_n as f64) / t).exp() {
             cur = q;
             cur_n = n;
+            let full = top.len() >= params.keep;
+            if (!full || n > top.last().unwrap().0) && !top.iter().any(|(_, b)| b.hash == q.hash) {
+                let at = top.partition_point(|(m, _)| *m >= n);
+                top.insert(at, (n, q));
+                top.truncate(params.keep.max(1));
+            }
             if n > best_n {
                 best = q;
                 best_n = n;
@@ -173,7 +187,7 @@ pub fn anneal(
             }
         }
     }
-    (best, best_n)
+    (best, best_n, top)
 }
 
 /// Every position one change away from `b`: a piece moved to any empty
