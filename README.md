@@ -181,10 +181,16 @@ can exceed, explained in [BOUND.md](BOUND.md):
   ended up.
 - A piece that ends `d` squares from its start used at least `d` of the four
   steps.
-- Captures need extra care, done trap by trap.
+- Each trap and the pieces around it are counted exactly, with the capture
+  rules: nothing is removed until its guards leave, and a piece left on a
+  trap has a neighbor at the end.
+- A silver piece moves only when a stronger gold piece next to it pushes or
+  pulls it, and it takes away that gold piece's endings on its square. The
+  bound weighs one against the other.
 
-That gives 588,575 for gold-only positions with nothing on the traps, and
-more otherwise. The gap to 372,846 comes from what the bound ignores: pieces
+No legal position has more than 649,394 unique moves. With gold pieces
+only the bound is 626,365, or 539,328 with nothing on the traps. The gap to
+372,846 comes from what the bound ignores: pieces
 blocking each other's squares, and two moves wanting the same square. A proof
 would need a bound that captures both. An exhaustive search is out of reach:
 there are about 3·10²² ways to place a gold army.
@@ -200,7 +206,7 @@ target/release/count [--ref] BOARD...      # unique moves; --ref also counts wit
 target/release/crosscheck [N] [SEED]       # fast count vs TurnBuilder on random crowded boards
 target/release/search [--proxy 3] legal|gold [THREADS] [ITERS] [T_START] [T_END] [START_BOARD]
 target/release/lattice [THREADS] [SWAPS]   # lattice-based candidates
-target/release/bound [empty-traps] [SILVER...]   # upper bound over all positions
+target/release/bound [empty-traps|legal]   # upper bound over all positions
 target/release/swaptest BOARD SQ...        # swap the rabbits on SQ... with stronger pieces
 target/release/deltas legal|gold BOARD [N] # how much random search changes cost (for temperatures)
 STEPS=3 target/release/bench N BOARD...    # time the counter (STEPS defaults to 4)
