@@ -75,6 +75,56 @@ There are two variants:
   step leaves three (about 28,000 ways). On top of that, an adjacent silver
   piece blocks a square that gold pieces would otherwise step into.
 
+## Both sides
+
+A variation: the position whose **side with fewer moves has the most**. A
+position is scored by the smaller of gold's unique moves with gold to move
+and silver's with silver to move. It has to be legal with either side to
+move.
+
+<table>
+<tr>
+<td align="center"><img src="images/both-196573.jpg" width="320" alt="196,573 unique moves for either side"><br>
+<b>196,573</b> for either side to move<br><code>boards/both-196573.txt</code></td>
+</tr>
+</table>
+
+```
+ +-----------------+
+8| r . r . r . r . |    196,573 unique moves with gold to move,
+7| . R . c . H . M |    and 196,573 with silver to move
+6| . r h . E x d . |
+5| R . . d . c . R |
+4| r . C . D . . r |
+3| . D x e . H R . |
+2| m . h . C . r . |
+1| . R . R . R . R |
+ +-----------------+
+   a b c d e f g h
+```
+
+- **Silver's turn is gold's turn on the flipped board.** Turning the board
+  180 degrees and swapping the colors maps one to the other, so `count`
+  counts both. A position that is its own flip has the same count for both
+  sides, and `search both-sym` searches only those. `crosscheck` checks
+  silver's count against TurnBuilder too.
+- **The armies mix rather than split the board.** Both full armies are
+  spread over the whole board, mostly on squares of one color, the way
+  the one-sided records spread one army. Half of each side's rabbits are
+  on its home row.
+- **Pieces still avoid each other, enemies included.** The only enemy
+  contacts are four gold rabbits next to silver rabbits. Equal pieces can't
+  push, pull or freeze each other, and rabbits have few steps to lose. The
+  only friendly contacts are a horse and rabbit on f3 and g3 and their
+  flipped copies on c6 and b6.
+- **Symmetry costs nothing here, as far as the search can tell.** The best
+  board came from the symmetric search (`search --proxy 3 both-sym 4 300000
+  1000 10`: 489 runs in 4.5 hours found it 3 times). Unrestricted runs
+  (`both`) from random boards peaked at 194,550, and four runs started from
+  the 196,573 board all ended back on it.
+- **About 53% of the one-sided record** of 372,739. Each army's pieces
+  take squares the other's would step to.
+
 ## History
 
 The question came up in the arimaa.com forum's
@@ -202,13 +252,13 @@ Requires Rust (edition 2024). It depends on `howdah-arimaa` from
 
 ```bash
 cargo build --release
-target/release/count [--ref] BOARD...      # unique moves; --ref also counts with TurnBuilder
-target/release/crosscheck [N] [SEED]       # fast count vs TurnBuilder on random crowded boards
-target/release/search [--proxy 3] legal|gold [THREADS] [ITERS] [T_START] [T_END] [START_BOARD]
+target/release/count [--ref] [--both] BOARD... # unique moves; --ref also counts with TurnBuilder, --both for silver too
+target/release/crosscheck [N] [SEED]       # fast count vs TurnBuilder on random crowded boards, both sides
+target/release/search [--proxy 3] legal|gold|both|both-sym [THREADS] [ITERS] [T_START] [T_END] [START_BOARD]
 target/release/lattice [THREADS] [SWAPS]   # lattice-based candidates
 target/release/bound [empty-traps|legal]   # upper bound over all positions
 target/release/swaptest BOARD SQ...        # swap the rabbits on SQ... with stronger pieces
-target/release/deltas legal|gold BOARD [N] # how much random search changes cost (for temperatures)
+target/release/deltas VARIANT BOARD [N]    # how much random search changes cost (for temperatures)
 STEPS=3 target/release/bench N BOARD...    # time the counter (STEPS defaults to 4)
 ```
 

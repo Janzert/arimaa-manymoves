@@ -1,0 +1,14 @@
+2g
+ +-----------------+
+8| r . r . r . r . |
+7| . R . c . H . M |
+6| . r h . E x d . |
+5| R . . d . c . R |
+4| r . C . D . . r |
+3| . D x e . H R . |
+2| m . h . C . r . |
+1| . R . R . R . R |
+ +-----------------+
+   a b c d e f g h
+
+# 196573 unique moves for the side with fewer (gold 196573, silver 196573)

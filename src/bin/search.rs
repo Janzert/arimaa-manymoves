@@ -1,6 +1,7 @@
 //! Runs simulated annealing on many threads and saves each new best board.
-//! Usage: search [--proxy STEPS] legal|gold [threads] [iters per run] [t_start] [t_end] [start board file]
-//! Boards go in results/<variant>/<count>.txt.
+//! Usage: search [--proxy STEPS] legal|gold|both|both-sym [threads] [iters per run] [t_start] [t_end] [start board file]
+//! Boards go in results/<variant>/<count>.txt. For `both` and `both-sym` the
+//! count is the fewer of gold's moves and silver's, each with its side to move.
 //!
 //! With `--proxy 3` (or 2) it anneals on the cheaper 3-step count, then
 //! counts the run's best few boards exactly and polishes the best of them.
@@ -8,8 +9,8 @@
 use std::sync::Mutex;
 use std::time::Instant;
 
-use manymoves::search::{Anneal, Rng, Variant, anneal, polish, random_board};
-use manymoves::{Counter, parse_diagram};
+use manymoves::search::{Anneal, Rng, Variant, anneal, polish, random_board, score};
+use manymoves::{Board, Counter, parse_diagram};
 
 fn main() {
     let mut args: Vec<String> = std::env::args().collect();
@@ -18,17 +19,15 @@ fn main() {
         steps = args[i + 1].parse().unwrap();
         args.drain(i..i + 2);
     }
-    let variant = match args.get(1).map(String::as_str) {
-        Some("legal") => Variant::Legal,
-        Some("gold") => Variant::GoldOnly,
-        _ => panic!("usage: search legal|gold [threads] [iters] [t_start] [t_end] [start]"),
-    };
+    let variant = args.get(1).and_then(|a| Variant::from_name(a)).unwrap_or_else(|| {
+        panic!("usage: search legal|gold|both|both-sym [threads] [iters] [t_start] [t_end] [start]")
+    });
     let threads: usize = args.get(2).map_or(8, |s| s.parse().unwrap());
     let iters: u64 = args.get(3).map_or(20000, |s| s.parse().unwrap());
     let t_start: f64 = args.get(4).map_or(3000.0, |s| s.parse().unwrap());
     let t_end: f64 = args.get(5).map_or(30.0, |s| s.parse().unwrap());
     let start = args.get(6).map(|f| parse_diagram(&std::fs::read_to_string(f).unwrap()));
-    let dir = format!("results/{}", if variant == Variant::Legal { "legal" } else { "gold" });
+    let dir = format!("results/{}", variant.name());
     std::fs::create_dir_all(&dir).unwrap();
     let best = Mutex::new(0usize);
     let t0 = Instant::now();
@@ -49,7 +48,7 @@ fn main() {
                         let mut g = best.lock().unwrap();
                         if n > *g {
                             *g = n;
-                            let text = format!("2g\n{}\n# {n} unique moves\n", b.diagram());
+                            let text = board_text(b, n, variant);
                             std::fs::write(format!("{dir}/{n}.txt"), &text).unwrap();
                             println!(
                                 "[{:.0}s] thread {th} run {run}: {n}\n{}",
@@ -60,8 +59,11 @@ fn main() {
                     };
                     let (b1, n1) = if steps < 4 {
                         let (_, proxy, top) = anneal(b0, params, &mut rng, &mut counter, |_, _| {});
-                        let exact =
-                            top.iter().map(|(_, b)| (counter.count(b), *b)).max_by_key(|x| x.0).unwrap();
+                        let exact = top
+                            .iter()
+                            .map(|(_, b)| (score(&mut counter, b, variant, 4, 0), *b))
+                            .max_by_key(|x| x.0)
+                            .unwrap();
                         report(&exact.1, exact.0);
                         println!(
                             "[{:.0}s] thread {th} run {run}: proxy best {proxy}, exact best of top {} {}",
@@ -79,13 +81,21 @@ fn main() {
                         "[{:.0}s] thread {th} run {run} done: anneal {n1} polished {n}",
                         t0.elapsed().as_secs_f64()
                     );
-                    std::fs::write(
-                        format!("{dir}/local-{n}.txt"),
-                        format!("2g\n{}\n# {n} unique moves\n", b2.diagram()),
-                    )
-                    .unwrap();
+                    std::fs::write(format!("{dir}/local-{n}.txt"), board_text(&b2, n, variant)).unwrap();
                 }
             });
         }
     });
+}
+
+/// A results file: the board and its count (both sides' for `both`).
+fn board_text(b: &Board, n: usize, variant: Variant) -> String {
+    let note = if matches!(variant, Variant::Both | Variant::BothSym) {
+        let mut c = Counter::default();
+        let (g, s) = (c.count(b), c.count(&b.flipped()));
+        format!("{n} unique moves for the side with fewer (gold {g}, silver {s})")
+    } else {
+        format!("{n} unique moves")
+    };
+    format!("2g\n{}\n# {note}\n", b.diagram())
 }

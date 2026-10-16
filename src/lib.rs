@@ -3,7 +3,8 @@
 //! A turn is 1 to 4 steps made of single steps, pushes and pulls (a push or
 //! pull takes 2 steps). Its "unique moves" are the distinct boards it can end
 //! on, other than the board it started from. Repetition is ignored. Gold is
-//! always the side to move here.
+//! always the side to move here; [`Board::flipped`] turns silver's turn into
+//! gold's.
 //!
 //! [`Counter`] is the fast count used by the search. [`reference_count`]
 //! enumerates the same set with howdah-arimaa's `TurnBuilder`, step by step
@@ -116,6 +117,23 @@ impl Board {
             Some((Piece { color: COLORS[c], kind: KINDS[k] }, Square::new(sq as u8).unwrap()))
         });
         Position::from_pieces(Color::Gold, pieces).expect("one piece per square")
+    }
+
+    /// The board turned 180 degrees with the colors swapped, so that gold's
+    /// moves here are silver's moves on the original board.
+    pub fn flipped(&self) -> Board {
+        let mut b = Board::empty();
+        for c in 0..2 {
+            for k in 0..NKINDS {
+                let mut bits = self.bb[c][k];
+                while bits != 0 {
+                    let sq = bits.trailing_zeros() as usize;
+                    bits &= bits - 1;
+                    b.put(1 - c, k, 63 - sq);
+                }
+            }
+        }
+        b
     }
 
     #[inline]
@@ -405,8 +423,13 @@ impl Counter {
 /// Unique moves for gold from `pos`, by trying every legal step sequence with
 /// howdah-arimaa's `TurnBuilder`. Slow; for cross-checking [`Counter`].
 pub fn reference_count(pos: &Position) -> usize {
+    reference_count_for(pos, Color::Gold)
+}
+
+/// Unique moves for `side` from `pos`, as [`reference_count`].
+pub fn reference_count_for(pos: &Position, side: Color) -> usize {
     let mut start = pos.clone();
-    start.set_side_to_move(Color::Gold);
+    start.set_side_to_move(side);
     let mut seen = HashSet::new();
     let mut finals = HashSet::new();
     let mut tb = TurnBuilder::new(&start);

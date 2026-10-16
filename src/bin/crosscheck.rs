@@ -1,9 +1,11 @@
 //! Compares the fast counter with howdah-arimaa's TurnBuilder on random
 //! crowded positions, where pushes, pulls, freezing and traps all come up.
+//! Silver's count (the fast count of the flipped board) is checked too.
 //! Usage: crosscheck [positions] [seed]
 
+use howdah_arimaa::Color;
 use manymoves::search::{ARMY, Rng};
-use manymoves::{Board, Counter, NKINDS, TRAPS, neighbors, reference_count};
+use manymoves::{Board, Counter, NKINDS, TRAPS, neighbors, reference_count_for};
 
 fn random_crowded(rng: &mut Rng) -> Board {
     loop {
@@ -40,10 +42,13 @@ fn main() {
     let mut bad = 0;
     for i in 0..n {
         let b = random_crowded(&mut rng);
-        let (fast, slow) = (counter.count(&b), reference_count(&b.to_position()));
-        if fast != slow {
-            bad += 1;
-            println!("#{i}: fast {fast} reference {slow}\n{}", b.diagram());
+        let pos = b.to_position();
+        for (side, color, board) in [("gold", Color::Gold, b), ("silver", Color::Silver, b.flipped())] {
+            let (fast, slow) = (counter.count(&board), reference_count_for(&pos, color));
+            if fast != slow {
+                bad += 1;
+                println!("#{i} {side}: fast {fast} reference {slow}\n{}", b.diagram());
+            }
         }
     }
     println!("{n} positions, {bad} mismatches");

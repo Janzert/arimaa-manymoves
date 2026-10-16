@@ -1,4 +1,7 @@
 //! Simulated annealing over positions for many unique moves.
+//!
+//! The `Both` variants score a position by the fewer of gold's moves with
+//! gold to move and silver's with silver to move.
 
 use crate::{Board, Counter, GOLD, NKINDS, RABBIT, RANK_1, RANK_8, SILVER, TRAPS, neighbors};
 
@@ -11,6 +14,68 @@ pub enum Variant {
     Legal,
     /// Gold pieces only.
     GoldOnly,
+    /// Legal with either side to move, scored by the side with fewer moves.
+    Both,
+    /// `Both`, limited to positions that are their own [`Board::flipped`]
+    /// (so both sides have the same count).
+    BothSym,
+}
+
+impl Variant {
+    pub fn name(self) -> &'static str {
+        match self {
+            Variant::Legal => "legal",
+            Variant::GoldOnly => "gold",
+            Variant::Both => "both",
+            Variant::BothSym => "both-sym",
+        }
+    }
+
+    pub fn from_name(name: &str) -> Option<Variant> {
+        [Variant::Legal, Variant::GoldOnly, Variant::Both, Variant::BothSym]
+            .into_iter()
+            .find(|v| v.name() == name)
+    }
+
+    fn both(self) -> bool {
+        matches!(self, Variant::Both | Variant::BothSym)
+    }
+}
+
+/// The score `search` maximizes: gold's unique moves (in up to `steps`
+/// steps), or for the `Both` variants the fewer of gold's and silver's.
+/// Stops early with a result of at most `floor` once that is certain.
+pub fn score(counter: &mut Counter, b: &Board, variant: Variant, steps: u32, floor: usize) -> usize {
+    let gold = counter.count_steps(b, steps);
+    if !variant.both() || gold <= floor {
+        return gold;
+    }
+    let flipped = b.flipped();
+    if flipped == *b { gold } else { gold.min(counter.count_steps(&flipped, steps)) }
+}
+
+/// For `BothSym`: `b`'s gold pieces with their flipped copies as silver,
+/// or `None` if a gold piece's copy would land on another gold piece.
+pub fn symmetrize(b: &Board) -> Option<Board> {
+    let mut gold = *b;
+    for k in 0..NKINDS {
+        let mut bits = b.bb[SILVER][k];
+        while bits != 0 {
+            let sq = bits.trailing_zeros() as usize;
+            bits &= bits - 1;
+            gold.remove(SILVER, k, sq);
+        }
+    }
+    let copy = gold.flipped();
+    if copy.occ[SILVER] & gold.occ[GOLD] != 0 {
+        return None;
+    }
+    for k in 0..NKINDS {
+        gold.bb[SILVER][k] = copy.bb[SILVER][k];
+    }
+    gold.occ[SILVER] = copy.occ[SILVER];
+    gold.hash ^= copy.hash;
+    Some(gold)
 }
 
 /// Pieces per kind in a full army (rabbit to elephant).
@@ -59,13 +124,24 @@ pub fn valid(b: &Board, variant: Variant) -> bool {
         }
     }
     match variant {
-        Variant::Legal => b.bb[GOLD][RABBIT] != 0 && b.bb[SILVER][RABBIT] != 0,
+        Variant::Legal | Variant::Both => b.bb[GOLD][RABBIT] != 0 && b.bb[SILVER][RABBIT] != 0,
+        Variant::BothSym => b.bb[GOLD][RABBIT] != 0 && b.flipped() == *b,
         Variant::GoldOnly => b.occ[SILVER] == 0 && b.occ[GOLD] != 0,
     }
 }
 
 /// A full gold army on random squares (plus a silver rabbit for `Legal`).
+/// For the `Both` variants, gold's army and its flipped copy.
 pub fn random_board(rng: &mut Rng, variant: Variant) -> Board {
+    if variant.both() {
+        loop {
+            if let Some(b) = symmetrize(&random_board(rng, Variant::GoldOnly))
+                && valid(&b, variant)
+            {
+                return b;
+            }
+        }
+    }
     loop {
         let mut b = Board::empty();
         for (k, &n) in ARMY.iter().enumerate() {
@@ -84,10 +160,16 @@ pub fn random_board(rng: &mut Rng, variant: Variant) -> Board {
     }
 }
 
-/// A random small change to `b` (which may make it invalid).
+/// A random small change to `b` (which may make it invalid). For `BothSym`
+/// the change is made to gold and copied to silver.
 pub fn mutate(b: &Board, rng: &mut Rng, variant: Variant) -> Board {
+    let q = mutate_any(b, rng, variant);
+    if variant == Variant::BothSym { symmetrize(&q).unwrap_or(*b) } else { q }
+}
+
+fn mutate_any(b: &Board, rng: &mut Rng, variant: Variant) -> Board {
     let mut q = *b;
-    let colors = if variant == Variant::Legal { 2 } else { 1 };
+    let colors = if variant == Variant::GoldOnly { 1 } else { 2 };
     match rng.below(10) {
         // Move a piece to an adjacent empty square.
         0..=3 => {
@@ -159,7 +241,7 @@ pub fn anneal(
     mut report: impl FnMut(&Board, usize),
 ) -> (Board, usize, Vec<(usize, Board)>) {
     let mut cur = start;
-    let mut cur_n = counter.count_steps(&cur, params.steps);
+    let mut cur_n = score(counter, &cur, params.variant, params.steps, 0);
     let (mut best, mut best_n) = (cur, cur_n);
     let mut top: Vec<(usize, Board)> = vec![(cur_n, cur)];
     report(&best, best_n);
@@ -170,7 +252,7 @@ pub fn anneal(
         if q == cur || !valid(&q, params.variant) {
             continue;
         }
-        let n = counter.count_steps(&q, params.steps);
+        let n = score(counter, &q, params.variant, params.steps, 0);
         if n >= cur_n || rng.unit() < ((n as f64 - cur_n as f64) / t).exp() {
             cur = q;
             cur_n = n;
@@ -192,9 +274,10 @@ pub fn anneal(
 
 /// Every position one change away from `b`: a piece moved to any empty
 /// square, two different pieces swapped, a piece removed or added.
+/// For `BothSym` each change is made to gold and copied to silver.
 pub fn neighborhood(b: &Board, variant: Variant) -> Vec<Board> {
     let mut out = Vec::new();
-    let colors = if variant == Variant::Legal { 2 } else { 1 };
+    let colors = if variant == Variant::GoldOnly { 1 } else { 2 };
     let occupied: Vec<(usize, (usize, usize))> =
         (0..64).filter_map(|sq| b.piece_at(sq).map(|p| (sq, p))).collect();
     let empties: Vec<usize> = (0..64).filter(|&sq| b.all() >> sq & 1 == 0).collect();
@@ -231,6 +314,11 @@ pub fn neighborhood(b: &Board, variant: Variant) -> Vec<Board> {
             }
         }
     }
+    if variant == Variant::BothSym {
+        out = out.iter().filter_map(symmetrize).filter(|q| q != b).collect();
+        out.sort_by_key(|q| q.hash);
+        out.dedup();
+    }
     out.retain(|q| valid(q, variant));
     out
 }
@@ -245,7 +333,7 @@ pub fn polish(
     mut report: impl FnMut(&Board, usize),
 ) -> (Board, usize) {
     let mut cur = start;
-    let mut cur_n = counter.count(&cur);
+    let mut cur_n = score(counter, &cur, variant, 4, 0);
     'outer: loop {
         let mut nb = neighborhood(&cur, variant);
         // Shuffle so repeated polishes don't always take the same path.
@@ -253,7 +341,7 @@ pub fn polish(
             nb.swap(i, rng.below(i + 1));
         }
         for q in nb {
-            let n = counter.count(&q);
+            let n = score(counter, &q, variant, 4, cur_n);
             if n > cur_n {
                 cur = q;
                 cur_n = n;

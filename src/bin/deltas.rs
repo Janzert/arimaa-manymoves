@@ -1,22 +1,22 @@
 //! How much random search mutations change the count of a board, for
-//! choosing annealing temperatures. Usage: deltas legal|gold BOARD [N]
+//! choosing annealing temperatures. Usage: deltas legal|gold|both|both-sym BOARD [N]
 
-use manymoves::search::{Rng, Variant, mutate, valid};
+use manymoves::search::{Rng, Variant, mutate, score, valid};
 use manymoves::{Counter, parse_diagram};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    let variant = if args[1] == "legal" { Variant::Legal } else { Variant::GoldOnly };
+    let variant = Variant::from_name(&args[1]).expect("variant");
     let b = parse_diagram(&std::fs::read_to_string(&args[2]).unwrap());
     let n: usize = args.get(3).map_or(400, |s| s.parse().unwrap());
     let mut rng = Rng::new(5);
     let mut c = Counter::default();
-    let base = c.count(&b) as i64;
+    let base = score(&mut c, &b, variant, 4, 0) as i64;
     let mut d = Vec::new();
     while d.len() < n {
         let q = mutate(&b, &mut rng, variant);
         if q != b && valid(&q, variant) {
-            d.push(c.count(&q) as i64 - base);
+            d.push(score(&mut c, &q, variant, 4, 0) as i64 - base);
         }
     }
     let mut u = d.clone();
